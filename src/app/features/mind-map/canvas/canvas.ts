@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal, NgZone, ElementRef, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { Component, computed, inject, signal, NgZone, ElementRef, OnInit, OnDestroy, ChangeDetectionStrategy, effect, Injector } from '@angular/core';
 import { StateService, ViewportService } from '../../../core/services';
 import { NodeComponent } from '../node/node';
 import { EdgesComponent } from '../edges/edges';
@@ -162,6 +162,7 @@ import { EdgesComponent } from '../edges/edges';
 export class CanvasComponent implements OnInit, OnDestroy {
   private state = inject(StateService);
   private viewportSvc = inject(ViewportService);
+  private injector = inject(Injector);
   private zone = inject(NgZone);
   private elRef = inject(ElementRef<HTMLElement>);
 
@@ -238,6 +239,39 @@ export class CanvasComponent implements OnInit, OnDestroy {
       el.addEventListener('touchmove', this.onTouchMove, { passive: false });
       el.addEventListener('touchend', this.onTouchEnd);
     });
+
+    // Center viewport on the first root (parent-less) node when nodes are restored.
+    let didCenter = false;
+    effect(() => {
+      const nodes = this.state.nodes();
+      if (didCenter) return;
+      if (!nodes || nodes.length === 0) return;
+
+      // find first parent/root node (node without parentId)
+      const root = nodes.find(n => !n.parentId) || nodes[0];
+      if (!root) return;
+
+      // Determine viewport element size
+      let vw = window.innerWidth;
+      let vh = window.innerHeight;
+      try {
+        const viewportEl = this.elRef.nativeElement.querySelector('.canvas-viewport') as HTMLElement | null;
+        if (viewportEl) {
+          const r = viewportEl.getBoundingClientRect();
+          vw = r.width || vw;
+          vh = r.height || vh;
+        }
+      } catch (e) {}
+
+      // node center (node.position is top-left)
+      const NODE_W = 160;
+      const NODE_H = 48;
+      const cx = root.position.x + NODE_W / 2;
+      const cy = root.position.y + NODE_H / 2;
+
+      this.viewportSvc.centerOn(cx, cy, vw, vh);
+      didCenter = true;
+    }, { injector: this.injector });
   }
 
   ngOnDestroy(): void {

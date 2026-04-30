@@ -1,4 +1,5 @@
 import { Injectable, signal, computed } from '@angular/core';
+import { Injector } from '@angular/core';
 
 export interface Viewport {
   x: number;      // pan offset X (world coords)
@@ -93,5 +94,18 @@ export class ViewportService {
       x: (screenX - x) / scale,
       y: (screenY - y) / scale,
     };
+  }
+
+  /** Center the viewport so the given world coordinate appears at the center of the screen. */
+  centerOn(worldX: number, worldY: number, screenW: number, screenH: number): void {
+    this._viewport.update(v => {
+      const scale = v.scale;
+      const cx = screenW / 2;
+      const cy = screenH / 2;
+      // desired pan so world point maps to center: panX = cx - worldX * scale
+      const panX = cx - worldX * scale;
+      const panY = cy - worldY * scale;
+      return { ...v, x: panX, y: panY };
+    });
   }
 }
