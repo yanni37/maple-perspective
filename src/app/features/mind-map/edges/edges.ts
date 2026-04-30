@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, Input } from '@angular/core';
 import { StateService } from '../../../core/services';
 import type { Edge, MindMapNode } from '../../../core/models';
 
@@ -10,6 +10,8 @@ export interface EdgeLine {
   type: Edge['type'];
   d: string; // SVG cubic Bézier path
   color: string; // branch color (parent-child) or link green
+  sourceId: string;
+  targetId: string;
 }
 
 // Color palette for parent-child branches (deterministic by parent ID)
@@ -72,6 +74,7 @@ function cubicPath(x1: number, y1: number, x2: number, y2: number): string {
         <path
           [attr.d]="edge.d"
           [class.link]="edge.type === 'link'"
+          [class.dimmed]="isDimmed(edge)"
           [style.stroke]="edge.color"
         />
       }
@@ -91,10 +94,19 @@ function cubicPath(x1: number, y1: number, x2: number, y2: number): string {
     }
     .link { stroke-dasharray: 6 4; }
     .draft { stroke: #f9e2af; stroke-dasharray: 4 4; opacity: 0.7; }
+    path { transition: opacity 0.2s; }
+    path.dimmed { opacity: 0.08; }
   `],
 })
 export class EdgesComponent {
   private state = inject(StateService);
+
+  @Input() focusedId: string | null = null;
+
+  isDimmed(edge: EdgeLine): boolean {
+    if (!this.focusedId) return false;
+    return edge.sourceId !== this.focusedId && edge.targetId !== this.focusedId;
+  }
 
   // Exposed so canvas can set the draft edge during link-drag
   readonly draft = computed(() => this._draft());
@@ -127,6 +139,8 @@ export class EdgesComponent {
           type: e.type,
           d: cubicPath(x1, y1, x2, y2),
           color,
+          sourceId: e.sourceId,
+          targetId: e.targetId,
         } satisfies EdgeLine;
       })
       .filter((e): e is EdgeLine => e !== null);

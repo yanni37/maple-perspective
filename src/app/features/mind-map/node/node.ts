@@ -13,12 +13,12 @@ const DRAG_THRESHOLD = 5;
     '[style.position]': '"absolute"',
   },
   template: `
-    <div class="node" [class.selected]="selected" [class.dragging]="dragging">
+    <div class="node" [class.selected]="selected" [class.dragging]="dragging" [class.dimmed]="dimmed">
       {{ node.content }}
     </div>
   `,
   styles: [`
-    :host { touch-action: none; z-index: 1; }
+    :host { touch-action: none; z-index: 1; transition: opacity 0.2s; }
     :host(.is-dragging) { z-index: 100; }
     .node {
       padding: 0.5rem 0.75rem;
@@ -30,7 +30,7 @@ const DRAG_THRESHOLD = 5;
       cursor: grab;
       user-select: none;
       white-space: nowrap;
-      transition: border-color 0.15s, box-shadow 0.15s;
+      transition: border-color 0.15s, box-shadow 0.15s, opacity 0.2s;
     }
     .node.selected {
       border-color: #89b4fa;
@@ -41,11 +41,15 @@ const DRAG_THRESHOLD = 5;
       opacity: 0.85;
       transform: scale(1.05);
     }
+    .node.dimmed {
+      opacity: 0.2;
+    }
   `],
 })
 export class NodeComponent {
   @Input({ required: true }) node!: MindMapNode;
   @Input() selected = false;
+  @Input() dimmed = false;
   @Output() select = new EventEmitter<string>();
   @Output() dragEnd = new EventEmitter<{ id: string; x: number; y: number }>();
   @Output() longPress = new EventEmitter<string>();

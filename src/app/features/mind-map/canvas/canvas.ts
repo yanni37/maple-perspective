@@ -11,11 +11,12 @@ import { EdgesComponent } from '../edges/edges';
   template: `
     <div class="canvas-viewport">
       <div class="canvas-world" [style.transform]="worldTransform()">
-        <app-edges />
+        <app-edges [focusedId]="selectedId()" />
         @for (node of visibleNodes(); track node.id) {
           <app-node
             [node]="node"
             [selected]="node.id === selectedId()"
+            [dimmed]="isNodeDimmed(node.id)"
             [style.left.px]="node.position.x"
             [style.top.px]="node.position.y"
             (select)="onNodeSelect($event)"
@@ -186,6 +187,26 @@ export class CanvasComponent implements OnInit, OnDestroy {
     const nodes = this.state.nodes();
     return nodes;
   });
+
+  readonly connectedIds = computed<Set<string>>(() => {
+    const id = this.selectedId();
+    if (!id) return new Set();
+    const edges = this.state.edges();
+    const ids = new Set<string>([id]);
+    for (const e of edges) {
+      if (e.sourceId === id || e.targetId === id) {
+        ids.add(e.sourceId);
+        ids.add(e.targetId);
+      }
+    }
+    return ids;
+  });
+
+  isNodeDimmed(nodeId: string): boolean {
+    const sel = this.selectedId();
+    if (!sel) return false;
+    return !this.connectedIds().has(nodeId);
+  }
 
   // ─── Pan state ─────────────────────────────────────────────────────
   private isPanning = false;
