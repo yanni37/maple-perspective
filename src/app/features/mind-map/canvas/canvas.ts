@@ -260,6 +260,9 @@ export class CanvasComponent implements OnInit, OnDestroy {
     const target = e.target as HTMLElement;
     if (!target.classList.contains('canvas-viewport') && !target.classList.contains('canvas-world')) return;
 
+    // Clicking on the empty canvas should clear selection so everything returns to full color
+    this.selectedId.set(null);
+
     // stop any running inertia when the user interacts
     this.stopInertia();
 
@@ -381,6 +384,11 @@ export class CanvasComponent implements OnInit, OnDestroy {
   private onTouchStart = (e: TouchEvent): void => {
     // stop any pinch inertia when starting new touch
     this.stopPinchInertia();
+    // if single-finger touch on background, clear selection so all nodes show
+    const t = e.target as HTMLElement | null;
+    if (e.touches.length === 1 && t && (t.classList.contains('canvas-viewport') || t.classList.contains('canvas-world'))) {
+      this.selectedId.set(null);
+    }
     if (e.touches.length === 2) {
       e.preventDefault();
       this.touches = [e.touches[0], e.touches[1]];
