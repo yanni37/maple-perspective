@@ -11,6 +11,7 @@ const DRAG_THRESHOLD = 5;
     '(pointerdown)': 'onPointerDown($event)',
     '(touchstart)': 'onPointerDown($event)',
     '(mousedown)': 'onPointerDown($event)',
+    '(contextmenu)': 'onContextMenu($event)',
     '[style.position]': '"absolute"',
   },
   template: `
@@ -54,6 +55,7 @@ export class NodeComponent {
   @Output() select = new EventEmitter<string>();
   @Output() dragEnd = new EventEmitter<{ id: string; x: number; y: number }>();
   @Output() longPress = new EventEmitter<string>();
+  @Output() context = new EventEmitter<{ id: string; x: number; y: number }>();
   @Output() linkDrop = new EventEmitter<{ sourceId: string; targetId: string }>();
   @Output() doubleTap = new EventEmitter<string>();
 
@@ -74,6 +76,18 @@ export class NodeComponent {
 
   private moveListener = (e: MouseEvent | TouchEvent) => this.onPointerMove(e);
   private upListener = (e: MouseEvent | TouchEvent) => this.onPointerUp(e);
+
+  onContextMenu(event: MouseEvent): void {
+    try { event.preventDefault(); } catch {}
+    try { event.stopPropagation(); } catch {}
+    const x = event.clientX;
+    const y = event.clientY;
+    this.zone.run(() => {
+      this.context.emit({ id: this.node.id, x, y });
+      // Also keep existing longPress semantic for menu
+      this.longPress.emit(this.node.id);
+    });
+  }
 
   onPointerDown(event: MouseEvent | TouchEvent): void {
     event.preventDefault();

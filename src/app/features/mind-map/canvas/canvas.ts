@@ -22,6 +22,7 @@ import { EdgesComponent } from '../edges/edges';
             (select)="onNodeSelect($event)"
             (dragEnd)="onDragEnd($event)"
             (longPress)="onLongPress($event)"
+            (context)="onNodeContext($event)"
             (linkDrop)="onLinkDrop($event)"
             (doubleTap)="onDoubleTap($event)"
           />
@@ -557,6 +558,13 @@ export class CanvasComponent implements OnInit, OnDestroy {
       this.contextMenuNodeId.set(nodeId);
       this.contextMenuPos.set({ x: node.position.x + 40, y: node.position.y + 40 });
     }
+  }
+
+  onNodeContext(evt: { id: string; x: number; y: number }): void {
+    // convert screen coords to world coords and open menu there
+    const world = this.viewportSvc.screenToWorld(evt.x, evt.y);
+    this.contextMenuNodeId.set(evt.id);
+    this.contextMenuPos.set({ x: world.x, y: world.y });
   }
 
   // Ensure viewport stays within content bounds computed from nodes
