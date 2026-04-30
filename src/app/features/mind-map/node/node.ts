@@ -8,6 +8,7 @@ const DRAG_THRESHOLD = 5;
   selector: 'app-node',
   standalone: true,
   host: {
+    '(pointerdown)': 'onPointerDown($event)',
     '(touchstart)': 'onPointerDown($event)',
     '(mousedown)': 'onPointerDown($event)',
     '[style.position]': '"absolute"',
@@ -77,6 +78,13 @@ export class NodeComponent {
   onPointerDown(event: MouseEvent | TouchEvent): void {
     event.preventDefault();
     event.stopPropagation();
+    // If this is a PointerEvent, also stop its propagation (pointer events can reach canvas)
+    try {
+      const pe = event as unknown as PointerEvent;
+      if (pe && typeof pe.pointerId === 'number') {
+        pe.stopPropagation();
+      }
+    } catch (e) {}
     const pos = this.getClientPos(event);
     this.startX = pos.x;
     this.startY = pos.y;
@@ -95,10 +103,16 @@ export class NodeComponent {
     }, LONG_PRESS_MS);
 
     this.zone.runOutsideAngular(() => {
-      document.addEventListener('mousemove', this.moveListener);
-      document.addEventListener('mouseup', this.upListener);
-      document.addEventListener('touchmove', this.moveListener, { passive: false });
-      document.addEventListener('touchend', this.upListener);
+      // Support pointer events when available
+      if (window.PointerEvent) {
+        document.addEventListener('pointermove', this.moveListener as any);
+        document.addEventListener('pointerup', this.upListener as any);
+      } else {
+        document.addEventListener('mousemove', this.moveListener);
+        document.addEventListener('mouseup', this.upListener);
+        document.addEventListener('touchmove', this.moveListener, { passive: false });
+        document.addEventListener('touchend', this.upListener);
+      }
     });
   }
 
@@ -136,10 +150,15 @@ export class NodeComponent {
       cancelAnimationFrame(this.rafId);
       this.rafId = null;
     }
-    document.removeEventListener('mousemove', this.moveListener);
-    document.removeEventListener('mouseup', this.upListener);
-    document.removeEventListener('touchmove', this.moveListener);
-    document.removeEventListener('touchend', this.upListener);
+    if (window.PointerEvent) {
+      document.removeEventListener('pointermove', this.moveListener as any);
+      document.removeEventListener('pointerup', this.upListener as any);
+    } else {
+      document.removeEventListener('mousemove', this.moveListener);
+      document.removeEventListener('mouseup', this.upListener);
+      document.removeEventListener('touchmove', this.moveListener);
+      document.removeEventListener('touchend', this.upListener);
+    }
 
     this.elRef.nativeElement.classList.remove('is-dragging');
 

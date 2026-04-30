@@ -214,6 +214,13 @@ export class CanvasComponent implements OnInit, OnDestroy {
   private panStartY = 0;
   private rafId: number | null = null;
 
+  // Inertia (momentum) state
+  private pointerHistories = new Map<number, Array<{ x: number; y: number; t: number }>>();
+  private inertiaVx = 0; // pixels per ms
+  private inertiaVy = 0; // pixels per ms
+  private inertiaRaf: number | null = null;
+  private lastInertiaTs = 0;
+
   // ─── Pinch state ───────────────────────────────────────────────────
   private initialPinchDist = 0;
   private initialScale = 1;
@@ -253,7 +260,12 @@ export class CanvasComponent implements OnInit, OnDestroy {
     const target = e.target as HTMLElement;
     if (!target.classList.contains('canvas-viewport') && !target.classList.contains('canvas-world')) return;
 
+    // stop any running inertia when the user interacts
+    this.stopInertia();
+
     this.activePointers.set(e.pointerId, e);
+    // start history for this pointer
+    this.pointerHistories.set(e.pointerId, [{ x: e.clientX, y: e.clientY, t: performance.now() }]);
     if (this.activePointers.size === 1) {
       this.isPanning = true;
       this.panStartX = e.clientX;
@@ -263,21 +275,93 @@ export class CanvasComponent implements OnInit, OnDestroy {
 
   private onPointerMove = (e: PointerEvent): void => {
     this.activePointers.set(e.pointerId, e);
+    // record pointer history (for velocity calc)
+    const hist = this.pointerHistories.get(e.pointerId) ?? [];
+    hist.push({ x: e.clientX, y: e.clientY, t: performance.now() });
+    // keep last 8 samples
+    if (hist.length > 8) hist.shift();
+    this.pointerHistories.set(e.pointerId, hist);
     if (this.isPanning && this.activePointers.size === 1) {
       const dx = e.clientX - this.panStartX;
       const dy = e.clientY - this.panStartY;
       this.panStartX = e.clientX;
       this.panStartY = e.clientY;
-      this.scheduleUpdate(() => this.viewportSvc.pan(dx, dy));
+      this.scheduleUpdate(() => {
+        this.viewportSvc.pan(dx, dy);
+        this.applyClamp();
+      });
     }
   };
 
   private onPointerUp = (e: PointerEvent): void => {
+    // compute velocity for this pointer and start inertia if appropriate
+    const hist = this.pointerHistories.get(e.pointerId) ?? [];
+    this.pointerHistories.delete(e.pointerId);
+
+    // simple velocity: use last sample vs sample 3 entries back if available
+    if (hist.length >= 2) {
+      const last = hist[hist.length - 1];
+      // find a sample ~50-120ms before last
+      let ref = hist[0];
+      for (let i = hist.length - 2; i >= 0; i--) {
+        if (last.t - hist[i].t > 50) { ref = hist[i]; break; }
+      }
+      const dt = Math.max(1, last.t - ref.t); // ms
+      const vx = (last.x - ref.x) / dt; // px per ms
+      const vy = (last.y - ref.y) / dt;
+
+      const speed = Math.hypot(vx, vy);
+      // threshold px/ms -> ~0.03 px/ms = 30 px/s (lower to start inertia for gentler swipes)
+      const START_THRESHOLD = 0.03; // px/ms
+      if (speed > START_THRESHOLD) {
+        this.inertiaVx = vx;
+        this.inertiaVy = vy;
+        this.startInertia();
+      }
+    }
+
     this.activePointers.delete(e.pointerId);
     if (this.activePointers.size === 0) {
       this.isPanning = false;
     }
   };
+
+  private startInertia(): void {
+    if (this.inertiaRaf) return;
+    this.lastInertiaTs = performance.now();
+    const step = (t: number) => {
+      const dt = t - this.lastInertiaTs; // ms
+      this.lastInertiaTs = t;
+      // apply movement
+      const dx = this.inertiaVx * dt;
+      const dy = this.inertiaVy * dt;
+      this.viewportSvc.pan(dx, dy);
+      this.applyClamp();
+      // apply friction (adjusted for smoother, iOS-like glide)
+      // per-frame multiplier: closer to 1 => longer glide
+      const FRICTION = 0.985; // tuned for softer deceleration
+      this.inertiaVx *= FRICTION;
+      this.inertiaVy *= FRICTION;
+      const speed = Math.hypot(this.inertiaVx, this.inertiaVy);
+      // stop when the velocity is very small (px/ms)
+      const STOP_THRESHOLD = 0.01; // ~10 px/s
+      if (speed < STOP_THRESHOLD) {
+        this.stopInertia();
+        return;
+      }
+      this.inertiaRaf = requestAnimationFrame(step);
+    };
+    this.inertiaRaf = requestAnimationFrame(step);
+  }
+
+  private stopInertia(): void {
+    if (this.inertiaRaf) {
+      cancelAnimationFrame(this.inertiaRaf);
+      this.inertiaRaf = null;
+    }
+    this.inertiaVx = 0;
+    this.inertiaVy = 0;
+  }
 
   // ─── Wheel zoom ───────────────────────────────────────────────────
   private onWheel = (e: WheelEvent): void => {
@@ -285,18 +369,25 @@ export class CanvasComponent implements OnInit, OnDestroy {
     const vp = this.viewportSvc.viewport();
     const delta = -e.deltaY * 0.001;
     const newScale = vp.scale * (1 + delta);
-    this.scheduleUpdate(() => this.viewportSvc.zoom(newScale, e.clientX, e.clientY));
+    this.scheduleUpdate(() => {
+      this.viewportSvc.zoom(newScale, e.clientX, e.clientY);
+      this.applyClamp();
+    });
   };
 
   // ─── Pinch zoom ───────────────────────────────────────────────────
   private touches: Touch[] = [];
 
   private onTouchStart = (e: TouchEvent): void => {
+    // stop any pinch inertia when starting new touch
+    this.stopPinchInertia();
     if (e.touches.length === 2) {
       e.preventDefault();
       this.touches = [e.touches[0], e.touches[1]];
       this.initialPinchDist = this.getTouchDist(this.touches[0], this.touches[1]);
       this.initialScale = this.viewportSvc.viewport().scale;
+      // init pinch history
+      this.pinchHistory = [{ scale: this.initialScale, t: performance.now(), midX: (this.touches[0].clientX + this.touches[1].clientX)/2, midY: (this.touches[0].clientY + this.touches[1].clientY)/2 }];
     }
   };
 
@@ -307,11 +398,78 @@ export class CanvasComponent implements OnInit, OnDestroy {
       const newScale = this.initialScale * (dist / this.initialPinchDist);
       const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
       const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-      this.scheduleUpdate(() => this.viewportSvc.zoom(newScale, midX, midY));
+      // record pinch sample
+      const now = performance.now();
+      this.pinchHistory = this.pinchHistory ?? [];
+      this.pinchHistory.push({ scale: newScale, t: now, midX, midY });
+      if (this.pinchHistory.length > 8) this.pinchHistory.shift();
+
+      this.scheduleUpdate(() => {
+        this.viewportSvc.zoom(newScale, midX, midY);
+        this.applyClamp();
+      });
     }
   };
 
-  private onTouchEnd = (): void => { this.touches = []; };
+  private onTouchEnd = (): void => {
+    // compute pinch velocity and start pinch inertia if applicable
+    if (this.pinchHistory && this.pinchHistory.length >= 2) {
+      const last = this.pinchHistory[this.pinchHistory.length - 1];
+      let ref = this.pinchHistory[0];
+      for (let i = this.pinchHistory.length - 2; i >= 0; i--) {
+        if (last.t - this.pinchHistory[i].t > 50) { ref = this.pinchHistory[i]; break; }
+      }
+      const dt = Math.max(1, last.t - ref.t);
+      const v = (last.scale - ref.scale) / dt; // scale per ms
+      const speed = Math.abs(v);
+      const PINCH_START = 0.0005; // start if scale changes ~0.0005 per ms
+      if (speed > PINCH_START) {
+        this.pinchInertiaV = v;
+        this.pinchInertiaMid = { x: last.midX, y: last.midY };
+        this.startPinchInertia();
+      }
+    }
+    this.touches = [];
+    this.pinchHistory = undefined;
+  };
+
+  // ─── Pinch inertia state ─────────────────────────────────────────
+  private pinchHistory: Array<{ scale: number; t: number; midX: number; midY: number }> | undefined;
+  private pinchInertiaV = 0; // scale per ms
+  private pinchInertiaRaf: number | null = null;
+  private pinchInertiaMid: { x: number; y: number } | null = null;
+
+  private startPinchInertia(): void {
+    if (this.pinchInertiaRaf) return;
+    let lastTs = performance.now();
+    const step = (t: number) => {
+      const dt = t - lastTs; lastTs = t;
+      const vp = this.viewportSvc.viewport();
+      // apply additive scale change (small dt approximation)
+      const newScale = vp.scale + this.pinchInertiaV * dt;
+      const mid = this.pinchInertiaMid ?? { x: 0, y: 0 };
+      this.viewportSvc.zoom(newScale, mid.x, mid.y);
+      this.applyClamp();
+      // friction
+      const F = 0.92;
+      this.pinchInertiaV *= F;
+      if (Math.abs(this.pinchInertiaV) < 0.0002) {
+        this.stopPinchInertia();
+        return;
+      }
+      this.pinchInertiaRaf = requestAnimationFrame(step);
+    };
+    this.pinchInertiaRaf = requestAnimationFrame(step);
+  }
+
+  private stopPinchInertia(): void {
+    if (this.pinchInertiaRaf) {
+      cancelAnimationFrame(this.pinchInertiaRaf);
+      this.pinchInertiaRaf = null;
+    }
+    this.pinchInertiaV = 0;
+    this.pinchInertiaMid = null;
+  }
 
   // ─── RAF batching ─────────────────────────────────────────────────
   private pendingUpdate: (() => void) | null = null;
@@ -357,6 +515,24 @@ export class CanvasComponent implements OnInit, OnDestroy {
       this.contextMenuNodeId.set(nodeId);
       this.contextMenuPos.set({ x: node.position.x + 40, y: node.position.y + 40 });
     }
+  }
+
+  // Ensure viewport stays within content bounds computed from nodes
+  private applyClamp(padding = 120): void {
+    const nodes = this.state.nodes();
+    if (!nodes || nodes.length === 0) return;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const n of nodes) {
+      minX = Math.min(minX, n.position.x);
+      minY = Math.min(minY, n.position.y);
+      maxX = Math.max(maxX, n.position.x + 160); // assume node width ~160px to include text
+      maxY = Math.max(maxY, n.position.y + 48);  // assume node height ~48px
+    }
+
+    const vpEl = this.elRef.nativeElement.querySelector('.canvas-viewport') as HTMLElement | null;
+    if (!vpEl) return;
+    const rect = vpEl.getBoundingClientRect();
+    this.viewportSvc.clampToContent({ minX, minY, maxX, maxY }, { w: rect.width, h: rect.height }, padding);
   }
 
   onLinkDrop(event: { sourceId: string; targetId: string }): void {
