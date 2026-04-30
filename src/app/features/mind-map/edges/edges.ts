@@ -8,6 +8,59 @@ export interface EdgeLine {
   x2: number;
   y2: number;
   type: Edge['type'];
+  d: string; // SVG cubic Bézier path
+  color: string; // branch color (parent-child) or link green
+}
+
+// Color palette for parent-child branches (deterministic by parent ID)
+const BRANCH_COLORS = [
+  '#89b4fa', // blue
+  '#f38ba8', // red/pink
+  '#a6e3a1', // green
+  '#f9e2af', // yellow
+  '#cba6f7', // purple
+  '#94e2d5', // teal
+  '#fab387', // orange
+  '#eba0ac', // mauve
+];
+
+function hashBranchId(branchId: string): number {
+  let hash = 0;
+  for (let i = 0; i < branchId.length; i++) {
+    hash = ((hash << 5) - hash) + branchId.charCodeAt(i);
+    hash = hash & hash; // 32-bit integer
+  }
+  return Math.abs(hash) % BRANCH_COLORS.length;
+}
+
+/**
+ * Find the "branch root" - the topmost child in the inheritance chain.
+ * E.g., if node C has parent B, and B has parent A, then find A.
+ * The returned branchId is the child of the root that leads to this node.
+ */
+function findBranchId(nodeId: string, nodeMap: Map<string, MindMapNode>): string {
+  const node = nodeMap.get(nodeId);
+  if (!node || !node.parentId) return nodeId; // no parent = this node is the branch root
+
+  let current = node;
+  let previous = current;
+
+  // Walk up the chain until we hit a node with no parent (the root)
+  while (current.parentId) {
+    previous = current;
+    const parent = nodeMap.get(current.parentId);
+    if (!parent) break; // parent doesn't exist
+    current = parent;
+  }
+
+  // Return the child of the root (or the original if no parent chain exists)
+  return previous.id;
+}
+
+function cubicPath(x1: number, y1: number, x2: number, y2: number): string {
+  const dx = Math.abs(x2 - x1);
+  const cx = Math.max(dx * 0.5, 60);
+  return `M ${x1} ${y1} C ${x1 + cx} ${y1}, ${x2 - cx} ${y2}, ${x2} ${y2}`;
 }
 
 @Component({
@@ -16,30 +69,27 @@ export interface EdgeLine {
   template: `
     <svg class="edges-layer">
       @for (edge of edgeLines(); track $index) {
-        <line
-          [attr.x1]="edge.x1"
-          [attr.y1]="edge.y1"
-          [attr.x2]="edge.x2"
-          [attr.y2]="edge.y2"
-          [class.parent-child]="edge.type === 'parent-child'"
+        <path
+          [attr.d]="edge.d"
           [class.link]="edge.type === 'link'"
+          [style.stroke]="edge.color"
         />
       }
 
       @if (draft(); as d) {
-        <line class="draft" [attr.x1]="d.x1" [attr.y1]="d.y1" [attr.x2]="d.x2" [attr.y2]="d.y2" />
+        <path class="draft" [attr.d]="d.d" />
       }
     </svg>
   `,
   styles: [`
     :host { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
     .edges-layer { width: 100%; height: 100%; overflow: visible; }
-    line {
+    path {
+      fill: none;
       stroke-width: 2;
       stroke-linecap: round;
     }
-    .parent-child { stroke: #89b4fa; }
-    .link { stroke: #a6e3a1; stroke-dasharray: 6 4; }
+    .link { stroke-dasharray: 6 4; }
     .draft { stroke: #f9e2af; stroke-dasharray: 4 4; opacity: 0.7; }
   `],
 })
@@ -61,12 +111,22 @@ export class EdgesComponent {
         const source = nodeMap.get(e.sourceId);
         const target = nodeMap.get(e.targetId);
         if (!source || !target) return null;
+        const x1 = source.position.x + 40;
+        const y1 = source.position.y + 16;
+        const x2 = target.position.x + 40;
+        const y2 = target.position.y + 16;
+        
+        let color = '#a6e3a1'; // default for links
+        if (e.type === 'parent-child') {
+          const branchId = findBranchId(target.id, nodeMap);
+          color = BRANCH_COLORS[hashBranchId(branchId)];
+        }
+        
         return {
-          x1: source.position.x + 40, // rough center offset
-          y1: source.position.y + 16,
-          x2: target.position.x + 40,
-          y2: target.position.y + 16,
+          x1, y1, x2, y2,
           type: e.type,
+          d: cubicPath(x1, y1, x2, y2),
+          color,
         } satisfies EdgeLine;
       })
       .filter((e): e is EdgeLine => e !== null);
