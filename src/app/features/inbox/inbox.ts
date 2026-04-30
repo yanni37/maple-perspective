@@ -1,5 +1,16 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { StateService, StorageService } from '../../core/services';
+
+interface ImportDiffView {
+  newNodes: number;
+  updatedNodes: number;
+  skippedNodes: number;
+  newEdges: number;
+  duplicateNodes: number;
+  duplicateEdges: number;
+  inboxAdded: number;
+  inboxSkipped: number;
+}
 
 @Component({
   selector: 'app-inbox',
@@ -39,6 +50,32 @@ import { StateService, StorageService } from '../../core/services';
           <li class="empty">Aucune idée en attente</li>
         }
       </ul>
+
+      @if (showImportModal()) {
+        <div class="import-modal-overlay" (click)="cancelImport()"></div>
+        <div class="import-modal-sheet" role="dialog" aria-modal="true" aria-label="Import JSON">
+          <div class="sheet-handle"></div>
+          <h3>Import JSON</h3>
+          <p>Choisis le mode d'import :</p>
+
+          <div class="diff-grid">
+            <div>newNodes</div><div>{{ importDiff()?.newNodes ?? 0 }}</div>
+            <div>updatedNodes</div><div>{{ importDiff()?.updatedNodes ?? 0 }}</div>
+            <div>skippedNodes</div><div>{{ importDiff()?.skippedNodes ?? 0 }}</div>
+            <div>newEdges</div><div>{{ importDiff()?.newEdges ?? 0 }}</div>
+            <div>duplicateNodes</div><div>{{ importDiff()?.duplicateNodes ?? 0 }}</div>
+            <div>duplicateEdges</div><div>{{ importDiff()?.duplicateEdges ?? 0 }}</div>
+            <div>inboxAdded</div><div>{{ importDiff()?.inboxAdded ?? 0 }}</div>
+            <div>inboxSkipped</div><div>{{ importDiff()?.inboxSkipped ?? 0 }}</div>
+          </div>
+
+          <div class="modal-actions">
+            <button class="replace" (click)="applyReplace()">Replace</button>
+            <button class="merge" (click)="applyMerge()">Merge</button>
+            <button class="cancel" (click)="cancelImport()">Cancel</button>
+          </div>
+        </div>
+      }
     </div>
   `,
   styles: [`
@@ -105,6 +142,87 @@ import { StateService, StorageService } from '../../core/services';
     .promote { color: #a6e3a1; }
     .delete { color: #f38ba8; }
     .empty { color: #6c7086; padding: 1rem 0; text-align: center; }
+
+    .import-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 900;
+    }
+    .import-modal-sheet {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      max-height: min(78vh, 560px);
+      overflow-y: auto;
+      background: #1e1e2e;
+      border-top: 1px solid #45475a;
+      border-top-left-radius: 16px;
+      border-top-right-radius: 16px;
+      padding: 0.65rem 1rem calc(1rem + env(safe-area-inset-bottom));
+      z-index: 901;
+      box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.45);
+      animation: sheet-in 180ms ease-out;
+    }
+    .sheet-handle {
+      width: 42px;
+      height: 4px;
+      border-radius: 999px;
+      background: #6c7086;
+      margin: 0 auto 0.75rem;
+    }
+    .import-modal-sheet h3 {
+      margin: 0 0 0.35rem;
+      font-size: 1rem;
+    }
+    .import-modal-sheet p {
+      margin: 0 0 0.75rem;
+      color: #a6adc8;
+      font-size: 0.85rem;
+    }
+    @keyframes sheet-in {
+      from {
+        transform: translateY(18px);
+        opacity: 0.7;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+    .diff-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.35rem 0.75rem;
+      font-size: 0.85rem;
+      margin-bottom: 0.9rem;
+    }
+    .diff-grid div:nth-child(odd) {
+      color: #a6adc8;
+    }
+    .diff-grid div:nth-child(even) {
+      color: #cdd6f4;
+      font-weight: 600;
+      text-align: right;
+    }
+    .modal-actions {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.5rem;
+    }
+    .modal-actions button {
+      border: none;
+      border-radius: 8px;
+      padding: 0.55rem 0.5rem;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+    .modal-actions .replace { background: #f38ba8; color: #11111b; }
+    .modal-actions .merge { background: #a6e3a1; color: #11111b; }
+    .modal-actions .cancel { background: #313244; color: #cdd6f4; }
   `],
 })
 export class InboxComponent {
@@ -112,6 +230,9 @@ export class InboxComponent {
   private storage = inject(StorageService);
 
   readonly items = computed(() => this.state.inbox());
+  readonly showImportModal = signal(false);
+  readonly importDiff = signal<ImportDiffView | null>(null);
+  private pendingImportJSON = signal<string | null>(null);
 
   add(input: HTMLInputElement): void {
     const content = input.value.trim();
@@ -136,15 +257,57 @@ export class InboxComponent {
     const reader = new FileReader();
     reader.onload = () => {
       const json = reader.result as string;
-      // Try inbox format first, then full backup
+
+      // Try inbox format first (always additive)
       const count = this.storage.importInboxJSON(json);
       if (count === 0) {
-        this.storage.importJSON(json);
+        const diff = this.storage.getMergeDiff(json);
+        if (!diff) {
+          window.alert('Fichier JSON invalide.');
+          return;
+        }
+
+        this.pendingImportJSON.set(json);
+        this.importDiff.set({
+          newNodes: diff.newNodes.length,
+          updatedNodes: diff.updatedNodes.length,
+          skippedNodes: diff.skippedNodes.length,
+          newEdges: diff.newEdges.length,
+          duplicateNodes: diff.duplicateNodes.length,
+          duplicateEdges: diff.duplicateEdges.length,
+          inboxAdded: diff.inboxAdded.length,
+          inboxSkipped: diff.inboxSkipped.length,
+        });
+        this.showImportModal.set(true);
       }
     };
     reader.readAsText(file);
     // Reset input so same file can be re-imported
     (event.target as HTMLInputElement).value = '';
+  }
+
+  applyReplace(): void {
+    const json = this.pendingImportJSON();
+    if (!json) return;
+    this.storage.importJSON(json);
+    this.resetImportModal();
+  }
+
+  applyMerge(): void {
+    const json = this.pendingImportJSON();
+    if (!json) return;
+    this.storage.mergeJSON(json);
+    this.resetImportModal();
+  }
+
+  cancelImport(): void {
+    this.resetImportModal();
+  }
+
+  private resetImportModal(): void {
+    this.showImportModal.set(false);
+    this.importDiff.set(null);
+    this.pendingImportJSON.set(null);
   }
 
   exportBackup(): void {
