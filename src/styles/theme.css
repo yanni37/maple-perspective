@@ -1,0 +1,103 @@
+/* ─── Maple Perspective · Design Tokens ─────────────────────────── */
+:root {
+  /* ── Base surfaces ──────────────────────────────────────────────── */
+  --mp-bg-base:          #F6F5F1;
+  --mp-bg-canvas-from:   #EDECE8;
+  --mp-bg-canvas-to:     #E4E2DC;
+  --mp-bg-surface:       rgba(255, 255, 255, 0.72);
+  --mp-bg-surface-solid: #F0EFEB;
+  --mp-bg-elevated:      #FFFFFF;
+  --mp-bg-hover:         rgba(0, 0, 0, 0.03);
+  --mp-bg-active:        rgba(0, 0, 0, 0.05);
+
+  /* ── Glass ──────────────────────────────────────────────────────── */
+  --mp-glass-blur:       16px;
+  --mp-glass-border:     rgba(0, 0, 0, 0.06);
+  --mp-glass-shadow:     0 4px 24px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.04);
+  --mp-glass-shadow-lg:  0 8px 40px rgba(0, 0, 0, 0.10), 0 2px 8px rgba(0, 0, 0, 0.04);
+
+  /* ── Text ───────────────────────────────────────────────────────── */
+  --mp-text-primary:     #1A1A1E;
+  --mp-text-secondary:   #6B6B76;
+  --mp-text-muted:       #A0A0AB;
+  --mp-text-inverse:     #FFFFFF;
+
+  /* ── Accent ─────────────────────────────────────────────────────── */
+  --mp-accent:           #5B6EF5;
+  --mp-accent-light:     #8B9AFF;
+  --mp-accent-bg:        rgba(91, 110, 245, 0.08);
+  --mp-accent-glow:      rgba(91, 110, 245, 0.16);
+
+  /* ── Semantic ───────────────────────────────────────────────────── */
+  --mp-success:          #34A853;
+  --mp-success-bg:       rgba(52, 168, 83, 0.10);
+  --mp-danger:           #EA4335;
+  --mp-danger-bg:        rgba(234, 67, 53, 0.10);
+  --mp-warning:          #F5A623;
+  --mp-warning-bg:       rgba(245, 166, 35, 0.10);
+
+  /* ── Radius ─────────────────────────────────────────────────────── */
+  --mp-radius-xs:  6px;
+  --mp-radius-sm:  10px;
+  --mp-radius-md:  14px;
+  --mp-radius-lg:  20px;
+  --mp-radius-xl:  28px;
+
+  /* ── Spacing ────────────────────────────────────────────────────── */
+  --mp-space-xs:   0.25rem;
+  --mp-space-sm:   0.5rem;
+  --mp-space-md:   0.75rem;
+  --mp-space-lg:   1rem;
+  --mp-space-xl:   1.5rem;
+
+  /* ── Transitions ────────────────────────────────────────────────── */
+  --mp-ease:             cubic-bezier(0.2, 0.8, 0.2, 1);
+  --mp-transition-fast:  140ms var(--mp-ease);
+  --mp-transition-normal:280ms var(--mp-ease);
+  --mp-transition-slow:  420ms var(--mp-ease);
+
+  /* ── Hit target (WCAG / Apple HIG) ──────────────────────────────── */
+  --mp-hit-target: 44px;
+}
+
+/* ── Reduced-motion override ──────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --mp-transition-fast:   0ms;
+    --mp-transition-normal: 0ms;
+    --mp-transition-slow:   0ms;
+  }
+}
+
+/* ── Dark theme overrides ─────────────────────────────────────────── */
+[data-theme="dark"] {
+  --mp-bg-base:          #181A17;
+  --mp-bg-canvas-from:   #1C1E1A;
+  --mp-bg-canvas-to:     #22251F;
+  --mp-bg-surface:       rgba(36, 40, 32, 0.80);
+  --mp-bg-surface-solid: #242820;
+  --mp-bg-elevated:      #2E3129;
+  --mp-bg-hover:         rgba(255, 255, 255, 0.05);
+  --mp-bg-active:        rgba(255, 255, 255, 0.08);
+
+  --mp-glass-border:     rgba(255, 255, 255, 0.07);
+  --mp-glass-shadow:     0 4px 24px rgba(0, 0, 0, 0.32), 0 1px 4px rgba(0, 0, 0, 0.22);
+  --mp-glass-shadow-lg:  0 8px 40px rgba(0, 0, 0, 0.42), 0 2px 8px rgba(0, 0, 0, 0.22);
+
+  --mp-text-primary:     #E5E5E0;
+  --mp-text-secondary:   #A8A89E;
+  --mp-text-muted:       #6E6E64;
+  --mp-text-inverse:     #181A17;
+
+  --mp-accent:           #8BAF6E;
+  --mp-accent-light:     #A3C488;
+  --mp-accent-bg:        rgba(139, 175, 110, 0.10);
+  --mp-accent-glow:      rgba(139, 175, 110, 0.18);
+
+  --mp-success:          #7EC88A;
+  --mp-success-bg:       rgba(126, 200, 138, 0.12);
+  --mp-danger:           #E08080;
+  --mp-danger-bg:        rgba(224, 128, 128, 0.12);
+  --mp-warning:          #D4B85C;
+  --mp-warning-bg:       rgba(212, 184, 92, 0.12);
+}

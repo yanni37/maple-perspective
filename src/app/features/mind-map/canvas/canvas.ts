@@ -33,18 +33,30 @@ import { EdgesComponent } from '../edges/edges';
       @if (contextMenuNodeId()) {
         <div class="context-menu-overlay" (click)="closeMenu()"></div>
         <div class="context-menu" [style.left.px]="contextMenuScreenPos().x" [style.top.px]="contextMenuScreenPos().y">
-          <button (click)="editNode()">✏️ Modifier</button>
-          <button (click)="addChildFromMenu()">➕ Ajouter enfant</button>
-          <button (click)="startLinking()">🔗 Lier</button>
-          <button (click)="deleteNode()">🗑 Supprimer</button>
+          <button (click)="editNode()"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /><path d="m15 5 4 4" /></svg> Modifier</button>
+          <button (click)="addChildFromMenu()"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="18" r="3" /><circle cx="6" cy="6" r="3" /><path d="M6 21V9a9 9 0 0 0 9 9" /></svg> Ajouter enfant</button>
+          <button (click)="startLinking()"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg> Lier</button>
+          <button (click)="deleteNode()"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg> Supprimer</button>
         </div>
       }
 
       <!-- Linking mode indicator -->
       @if (linkingFromId()) {
         <div class="linking-banner">
-          🔗 Tap un node pour créer le lien
-          <button (click)="cancelLinking()">✕</button>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
+          Tap un node pour créer le lien
+          <button (click)="cancelLinking()"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg></button>
+        </div>
+      }
+
+      <!-- Delete confirmation -->
+      @if (deleteConfirmNodeId()) {
+        <div class="edit-overlay" (click)="cancelDelete()"></div>
+        <div class="delete-dialog">
+          <p class="delete-msg">Ce nœud a <strong>{{ deleteChildCount() }}</strong> enfant(s).</p>
+          <button class="delete-opt" (click)="deleteNodeOnly()"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg> Supprimer ce nœud seul</button>
+          <button class="delete-opt danger" (click)="deleteBranch()"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg> Supprimer la branche entière</button>
+          <button class="delete-opt muted" (click)="cancelDelete()">Annuler</button>
         </div>
       }
 
@@ -53,13 +65,14 @@ import { EdgesComponent } from '../edges/edges';
         <div class="edit-overlay" (click)="cancelEdit()"></div>
         <div class="edit-dialog">
           <input #editInput type="text" [value]="editingContent()" (keydown.enter)="confirmEdit(editInput.value)" />
-          <button (click)="confirmEdit(editInput.value)">✓</button>
+          <button (click)="confirmEdit(editInput.value)"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg></button>
         </div>
       }
     </div>
   `,
   styles: [`
     :host { display: block; width: 100%; height: 100%; }
+    .icon { width: 1em; height: 1em; flex-shrink: 0; vertical-align: middle; }
     .canvas-viewport {
       position: relative;
       width: 100%;
@@ -85,52 +98,108 @@ import { EdgesComponent } from '../edges/edges';
       position: absolute;
       display: flex;
       flex-direction: column;
-      gap: 0.25rem;
-      padding: 0.5rem;
-      background: #1e1e2e;
-      border: 1px solid #45475a;
-      border-radius: 10px;
+      gap: 2px;
+      padding: 0.35rem;
+      background: var(--mp-bg-elevated, #FFF);
+      border: 1px solid var(--mp-glass-border);
+      border-radius: var(--mp-radius-md, 14px);
       z-index: 200;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+      box-shadow: var(--mp-glass-shadow-lg);
+      min-width: 180px;
     }
     .context-menu button {
       border: none;
       background: transparent;
-      color: #cdd6f4;
-      padding: 0.5rem 0.75rem;
+      color: var(--mp-text-primary, #1A1A1E);
+      padding: 0.55rem 0.75rem;
       text-align: left;
       cursor: pointer;
-      border-radius: 6px;
+      border-radius: var(--mp-radius-xs, 6px);
       font-size: 0.85rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: background var(--mp-transition-fast);
     }
-    .context-menu button:active { background: #313244; }
+    .context-menu button:hover  { background: var(--mp-bg-hover); }
+    .context-menu button:active { background: var(--mp-bg-active); }
     .linking-banner {
       position: absolute;
-      top: 0.5rem;
+      top: 0.75rem;
       left: 50%;
       transform: translateX(-50%);
-      background: #f9e2af;
-      color: #11111b;
-      padding: 0.4rem 1rem;
-      border-radius: 8px;
+      background: var(--mp-bg-elevated, #FFF);
+      color: var(--mp-text-primary);
+      border: 1px solid var(--mp-glass-border);
+      padding: 0.5rem 1rem;
+      border-radius: var(--mp-radius-xl, 28px);
       font-size: 0.8rem;
+      font-weight: 500;
       z-index: 150;
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      box-shadow: var(--mp-glass-shadow);
     }
     .linking-banner button {
       border: none;
       background: transparent;
       font-size: 1rem;
       cursor: pointer;
+      color: var(--mp-text-muted);
     }
     .edit-overlay {
       position: absolute;
       inset: 0;
-      background: rgba(0,0,0,0.4);
+      background: rgba(0, 0, 0, 0.15);
+      -webkit-backdrop-filter: blur(2px);
+      backdrop-filter: blur(2px);
       z-index: 199;
     }
+    .delete-dialog {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      z-index: 300;
+      background: var(--mp-bg-elevated, #FFF);
+      padding: 1rem;
+      border-radius: var(--mp-radius-md, 14px);
+      box-shadow: var(--mp-glass-shadow-lg);
+      border: 1px solid var(--mp-glass-border);
+      min-width: 260px;
+    }
+    .delete-msg {
+      margin: 0 0 0.25rem;
+      font-size: 0.9rem;
+      color: var(--mp-text-primary);
+      text-align: center;
+    }
+    .delete-opt {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      border: 1px solid var(--mp-glass-border);
+      border-radius: var(--mp-radius-sm, 10px);
+      background: var(--mp-bg-base);
+      color: var(--mp-text-primary);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background var(--mp-transition-fast);
+    }
+    .delete-opt:hover { background: var(--mp-bg-hover); }
+    .delete-opt:active { opacity: 0.8; }
+    .delete-opt.danger { color: var(--mp-danger); border-color: var(--mp-danger-bg); }
+    .delete-opt.danger:hover { background: var(--mp-danger-bg); }
+    .delete-opt.muted { justify-content: center; color: var(--mp-text-muted); border: none; }
+
     .edit-dialog {
       position: absolute;
       top: 50%;
@@ -139,33 +208,39 @@ import { EdgesComponent } from '../edges/edges';
       display: flex;
       gap: 0.5rem;
       z-index: 300;
+      background: var(--mp-bg-elevated, #FFF);
+      padding: 0.5rem;
+      border-radius: var(--mp-radius-md, 14px);
+      box-shadow: var(--mp-glass-shadow-lg);
+      border: 1px solid var(--mp-glass-border);
     }
     .edit-dialog input {
-      padding: 0.45rem 0.6rem;
-      border: 1px solid rgba(124,127,155,0.12);
-      border-radius: 10px;
-      background: rgba(255,255,255,0.02);
-      color: #e6eef8;
-      font-size: 0.98rem;
+      padding: 0.5rem 0.75rem;
+      border: 1.5px solid var(--mp-glass-border);
+      border-radius: var(--mp-radius-sm, 10px);
+      background: var(--mp-bg-base, #F6F5F1);
+      color: var(--mp-text-primary, #1A1A1E);
+      font-size: 0.95rem;
       width: 220px;
       outline: none;
-      transition: box-shadow 120ms ease, border-color 120ms ease;
+      transition: box-shadow var(--mp-transition-fast), border-color var(--mp-transition-fast);
     }
-    .edit-dialog input::placeholder { color: #97a0bf; }
+    .edit-dialog input::placeholder { color: var(--mp-text-muted); }
     .edit-dialog input:focus {
-      border-color: #89b4fa;
-      box-shadow: 0 10px 24px rgba(7,10,26,0.45), 0 0 0 6px rgba(137,180,250,0.04);
-      background: rgba(255,255,255,0.02);
+      border-color: var(--mp-accent, #5B6EF5);
+      box-shadow: 0 0 0 3px var(--mp-accent-glow);
     }
     .edit-dialog button {
       padding: 0.5rem 0.75rem;
       border: none;
-      border-radius: 8px;
-      background: #a6e3a1;
-      color: #11111b;
-      font-weight: bold;
+      border-radius: var(--mp-radius-sm, 10px);
+      background: var(--mp-accent, #5B6EF5);
+      color: var(--mp-text-inverse, #FFF);
+      font-weight: 600;
       cursor: pointer;
+      transition: opacity var(--mp-transition-fast);
     }
+    .edit-dialog button:active { opacity: 0.8; }
   `],
 })
 export class CanvasComponent implements OnInit, OnDestroy {
@@ -639,13 +714,60 @@ export class CanvasComponent implements OnInit, OnDestroy {
     this.linkingFromId.set(null);
   }
 
+  deleteConfirmNodeId = signal<string | null>(null);
+  deleteChildCount = computed(() => {
+    const id = this.deleteConfirmNodeId();
+    if (!id) return 0;
+    return this.getDescendantIds(id).length;
+  });
+
   deleteNode(): void {
     const nodeId = this.contextMenuNodeId();
-    if (nodeId) {
+    if (!nodeId) { this.closeMenu(); return; }
+    const childCount = this.getDescendantIds(nodeId).length;
+    if (childCount === 0) {
       this.state.removeNode(nodeId);
       if (this.selectedId() === nodeId) this.selectedId.set(null);
+      this.closeMenu();
+    } else {
+      this.deleteConfirmNodeId.set(nodeId);
+      this.closeMenu();
     }
-    this.closeMenu();
+  }
+
+  deleteNodeOnly(): void {
+    const nodeId = this.deleteConfirmNodeId();
+    if (nodeId) {
+      this.state.removeNodeOnly(nodeId);
+      if (this.selectedId() === nodeId) this.selectedId.set(null);
+    }
+    this.deleteConfirmNodeId.set(null);
+  }
+
+  deleteBranch(): void {
+    const nodeId = this.deleteConfirmNodeId();
+    if (nodeId) {
+      this.state.removeBranch(nodeId);
+      if (this.selectedId() === nodeId) this.selectedId.set(null);
+    }
+    this.deleteConfirmNodeId.set(null);
+  }
+
+  cancelDelete(): void {
+    this.deleteConfirmNodeId.set(null);
+  }
+
+  private getDescendantIds(nodeId: string): string[] {
+    const edges = this.state.edges();
+    const ids: string[] = [];
+    const queue = [nodeId];
+    while (queue.length) {
+      const current = queue.shift()!;
+      const children = edges.filter(e => e.sourceId === current && e.type === 'parent-child').map(e => e.targetId);
+      ids.push(...children);
+      queue.push(...children);
+    }
+    return ids;
   }
 
   closeMenu(): void {

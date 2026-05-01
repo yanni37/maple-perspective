@@ -16,14 +16,14 @@ export interface EdgeLine {
 
 // Color palette for parent-child branches (deterministic by parent ID)
 const BRANCH_COLORS = [
-  '#89b4fa', // blue
-  '#f38ba8', // red/pink
-  '#a6e3a1', // green
-  '#f9e2af', // yellow
-  '#cba6f7', // purple
-  '#94e2d5', // teal
-  '#fab387', // orange
-  '#eba0ac', // mauve
+  '#7B8AFF', // laser indigo
+  '#FF2D95', // magenta fluo
+  '#00FF88', // vert fluo
+  '#FFD000', // jaune fluo
+  '#C84DFF', // violet fluo
+  '#00FFFF', // cyan fluo
+  '#FF5500', // orange fluo
+  '#33AAFF', // bleu fluo
 ];
 
 function hashBranchId(branchId: string): number {
@@ -92,7 +92,7 @@ function cubicPath(x1: number, y1: number, x2: number, y2: number): string {
     }
     .link { stroke-dasharray: 6 4; }
     path { transition: opacity 0.2s; }
-    path.dimmed { opacity: 0.08; }
+    path.dimmed { opacity: 0.12; }
   `],
 })
 export class EdgesComponent {
@@ -121,7 +121,7 @@ export class EdgesComponent {
         const x2 = target.position.x + 40;
         const y2 = target.position.y + 16;
         
-        let color = '#a6e3a1'; // default for links
+        let color = '#A0A0AB'; // muted for links
         if (e.type === 'parent-child') {
           const branchId = findBranchId(target.id, nodeMap);
           color = BRANCH_COLORS[hashBranchId(branchId)];

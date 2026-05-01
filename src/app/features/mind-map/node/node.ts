@@ -22,28 +22,31 @@ const DRAG_THRESHOLD = 5;
     :host { touch-action: none; z-index: 1; transition: opacity 0.2s; }
     :host(.is-dragging) { z-index: 100; }
     .node {
-      padding: 0.5rem 0.75rem;
-      background: #313244;
-      color: #cdd6f4;
-      border: 2px solid transparent;
-      border-radius: 8px;
+      padding: 0.5rem 0.85rem;
+      background: var(--mp-bg-elevated, #FFF);
+      color: var(--mp-text-primary, #1A1A1E);
+      border: 1.5px solid var(--mp-glass-border);
+      border-radius: var(--mp-radius-sm, 10px);
       font-size: 0.85rem;
+      font-weight: 500;
       cursor: grab;
       user-select: none;
       white-space: nowrap;
-      transition: border-color 0.15s, box-shadow 0.15s, opacity 0.2s;
+      box-shadow: var(--mp-glass-shadow);
+      transition: border-color 0.15s, box-shadow 0.15s, opacity 0.2s, transform 0.15s;
     }
     .node.selected {
-      border-color: #89b4fa;
-      box-shadow: 0 0 8px rgba(137, 180, 250, 0.4);
+      border-color: var(--mp-accent, #5B6EF5);
+      box-shadow: 0 0 0 3px var(--mp-accent-glow), var(--mp-glass-shadow);
     }
     .node.dragging {
       cursor: grabbing;
-      opacity: 0.85;
-      transform: scale(1.05);
+      opacity: 0.9;
+      transform: scale(1.04);
+      box-shadow: var(--mp-glass-shadow-lg);
     }
     .node.dimmed {
-      opacity: 0.2;
+      opacity: 0.18;
     }
   `],
 })

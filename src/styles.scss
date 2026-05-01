@@ -1,3 +1,5 @@
+@import 'styles/theme.css';
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -10,9 +12,12 @@ html, body {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  background: #11111b;
-  color: #cdd6f4;
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', sans-serif;
+  background: var(--mp-bg-base, #F6F5F1);
+  color: var(--mp-text-primary, #1A1A1E);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', system-ui, sans-serif;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
 }

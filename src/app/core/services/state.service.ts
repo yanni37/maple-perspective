@@ -116,6 +116,47 @@ export class StateService {
     this.markDirty();
   }
 
+  /** Remove a node and re-parent its children to its parent (or make them roots). */
+  removeNodeOnly(nodeId: string): void {
+    this._graph.update(g => {
+      const parentEdge = g.edges.find(e => e.targetId === nodeId && e.type === 'parent-child');
+      const parentId = parentEdge?.sourceId ?? null;
+      // Re-parent children
+      const newEdges = g.edges
+        .filter(e => !(e.sourceId === nodeId && e.type === 'parent-child') && !(e.targetId === nodeId))
+        .concat(
+          parentId
+            ? g.edges.filter(e => e.sourceId === nodeId && e.type === 'parent-child').map(e => ({ ...e, sourceId: parentId }))
+            : []
+        );
+      // Update parentId on child nodes
+      const childIds = new Set(g.edges.filter(e => e.sourceId === nodeId && e.type === 'parent-child').map(e => e.targetId));
+      const newNodes = g.nodes
+        .filter(n => n.id !== nodeId)
+        .map(n => childIds.has(n.id) ? { ...n, parentId: parentId ?? undefined } : n);
+      return { nodes: newNodes, edges: newEdges };
+    });
+    this.markDirty();
+  }
+
+  /** Remove a node and all its descendants (entire branch). */
+  removeBranch(nodeId: string): void {
+    this._graph.update(g => {
+      const toRemove = new Set<string>();
+      const queue = [nodeId];
+      while (queue.length) {
+        const current = queue.shift()!;
+        toRemove.add(current);
+        g.edges.filter(e => e.sourceId === current && e.type === 'parent-child').forEach(e => queue.push(e.targetId));
+      }
+      return {
+        nodes: g.nodes.filter(n => !toRemove.has(n.id)),
+        edges: g.edges.filter(e => !toRemove.has(e.sourceId) && !toRemove.has(e.targetId)),
+      };
+    });
+    this.markDirty();
+  }
+
   // ─── Inbox operations ─────────────────────────────────────────────
 
   /** Capture a quick idea into the inbox. */

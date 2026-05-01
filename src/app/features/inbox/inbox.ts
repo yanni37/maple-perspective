@@ -19,14 +19,7 @@ interface ImportDiffView {
     <div class="inbox" [class.collapsed]="ui.collapsed()">
       <div class="inbox-content">
         <div class="inbox-header">
-        <h2>📥 Inbox ({{ items().length }})</h2>
-        <div class="inbox-actions">
-          <label class="import-btn" title="Importer JSON (Siri)">
-            📂
-            <input type="file" accept=".json" hidden (change)="importFile($event)" />
-          </label>
-          <button class="export-btn" title="Exporter backup" (click)="exportBackup()">💾</button>
-        </div>
+        <h2><svg class="icon icon-header" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12" /><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /></svg> Inbox ({{ items().length }})</h2>
         </div>
       <div class="inbox-input">
         <input
@@ -35,7 +28,7 @@ interface ImportDiffView {
           placeholder="Nouvelle idée…"
           (keydown.enter)="add(input)"
         />
-        <button (click)="add(input)">+</button>
+        <button (click)="add(input)"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M8 12h8" /><path d="M12 8v8" /></svg></button>
       </div>
 
       <ul class="inbox-list">
@@ -43,8 +36,8 @@ interface ImportDiffView {
           <li class="inbox-item">
             <span class="item-content">{{ item.content }}</span>
             <div class="item-actions">
-              <button class="promote" title="Importer dans le graph" (click)="promote(item.id)">🧠</button>
-              <button class="delete" title="Supprimer" (click)="remove(item.id)">✕</button>
+              <button class="promote" title="Importer dans le graph" (click)="promote(item.id)"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7" /><path d="M7 7h10v10" /></svg></button>
+              <button class="delete" title="Supprimer" (click)="remove(item.id)"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg></button>
             </div>
           </li>
         } @empty {
@@ -86,15 +79,14 @@ interface ImportDiffView {
       display: flex;
       flex-direction: column;
       height: 100%;
-      padding: 0.75rem;
-      background: #1e1e2e;
-      color: #cdd6f4;
+      padding: var(--mp-space-md);
+      color: var(--mp-text-primary);
     }
-    .inbox.collapsed { padding-top: 0.25rem; }
+    .inbox.collapsed { padding-top: var(--mp-space-xs); }
 
     .inbox-content {
       overflow: hidden;
-      transition: max-height 320ms cubic-bezier(.2,.9,.2,1), opacity 220ms ease;
+      transition: max-height 320ms var(--mp-ease), opacity 220ms var(--mp-ease);
       max-height: 1200px;
       opacity: 1;
     }
@@ -102,54 +94,74 @@ interface ImportDiffView {
       max-height: 0;
       opacity: 0;
     }
-    .inbox-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
-    .inbox-header h2 { font-size: 1rem; margin: 0; }
-    .inbox-actions { display: flex; gap: 0.4rem; }
+
+    .inbox-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--mp-space-sm);
+    }
+    .inbox-header h2 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin: 0;
+      color: var(--mp-text-primary);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .icon { width: 1em; height: 1em; flex-shrink: 0; }
+    .icon-header { width: 1.1rem; height: 1.1rem; }
+    .inbox-actions { display: flex; gap: 0.35rem; }
     .import-btn, .export-btn {
       background: transparent;
       border: none;
-      font-size: 1.1rem;
+      font-size: 1rem;
       cursor: pointer;
+      padding: 0.25rem;
+      border-radius: var(--mp-radius-xs);
+      transition: background var(--mp-transition-fast);
     }
-    .inbox-input {
-      display: flex;
-      gap: 0.5rem;
-    }
+    .import-btn:hover, .export-btn:hover { background: var(--mp-bg-hover); }
+
+    .inbox-input { display: flex; gap: var(--mp-space-sm); }
     .inbox-input input {
       flex: 1;
-      padding: 0.35rem 0.6rem;
-      border: 1px solid rgba(124,127,155,0.12);
-      border-radius: 10px;
-      background: rgba(255,255,255,0.02);
-      color: #e6eef8;
-      font-size: 0.95rem;
+      padding: 0.45rem 0.75rem;
+      border: 1.5px solid var(--mp-glass-border);
+      border-radius: var(--mp-radius-sm);
+      background: var(--mp-bg-base, #F6F5F1);
+      color: var(--mp-text-primary);
+      font-size: 0.9rem;
       font-weight: 400;
       outline: none;
-      transition: box-shadow 120ms ease, border-color 120ms ease, background 120ms ease;
+      transition: box-shadow var(--mp-transition-fast), border-color var(--mp-transition-fast);
     }
-    .inbox-input input::placeholder { color: #97a0bf; }
+    .inbox-input input::placeholder { color: var(--mp-text-muted); }
     .inbox-input input:focus {
-      border-color: #89b4fa;
-      box-shadow: 0 6px 18px rgba(7,10,26,0.5), 0 0 0 6px rgba(137,180,250,0.04);
-      background: rgba(255,255,255,0.02);
+      border-color: var(--mp-accent);
+      box-shadow: 0 0 0 3px var(--mp-accent-glow);
     }
     .inbox-input button {
-      padding: 0.35rem 0.6rem;
+      padding: 0.45rem;
       border: none;
-      border-radius: 8px;
-      background: linear-gradient(180deg, rgba(137,180,250,0.14), rgba(137,180,250,0.08));
-      color: #0b1020;
-      font-weight: 700;
+      border-radius: var(--mp-radius-sm);
+      background: transparent;
+      color: var(--mp-text-secondary);
+      font-size: 1rem;
       cursor: pointer;
       min-width: 40px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 2px 6px rgba(7,10,26,0.35);
+      transition: color var(--mp-transition-fast), opacity var(--mp-transition-fast);
     }
+    .inbox-input button:hover { color: var(--mp-accent); }
+    .inbox-input button:active { opacity: 0.7; }
+
     .inbox-list {
       list-style: none;
-      margin: 0.75rem 0 0;
+      margin: var(--mp-space-md) 0 0;
       padding: 0;
       overflow-y: auto;
       flex: 1;
@@ -158,25 +170,45 @@ interface ImportDiffView {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0.5rem;
-      border-bottom: 1px solid #313244;
+      padding: 0.5rem 0.25rem;
+      border-bottom: 1px solid var(--mp-glass-border);
+      transition: background var(--mp-transition-fast);
     }
-    .item-content { flex: 1; }
-    .item-actions { display: flex; gap: 0.4rem; }
+    .inbox-item:hover { background: var(--mp-bg-hover); border-radius: var(--mp-radius-xs); }
+
+    .item-content {
+      flex: 1;
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: var(--mp-text-primary);
+    }
+    .item-actions { display: flex; gap: 0.3rem; }
     .item-actions button {
       border: none;
       background: transparent;
       cursor: pointer;
-      font-size: 1rem;
+      font-size: 0.95rem;
+      padding: 0.2rem;
+      border-radius: var(--mp-radius-xs);
+      transition: background var(--mp-transition-fast);
     }
-    .promote { color: #a6e3a1; }
-    .delete { color: #f38ba8; }
-    .empty { color: #6c7086; padding: 1rem 0; text-align: center; }
+    .item-actions button:hover { background: var(--mp-bg-hover); }
+    .promote { color: var(--mp-success, #34A853); }
+    .delete  { color: var(--mp-danger, #EA4335); }
+
+    .empty {
+      color: var(--mp-text-muted);
+      padding: 1.25rem 0;
+      text-align: center;
+      font-size: 0.85rem;
+    }
 
     .import-modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.5);
+      background: rgba(0, 0, 0, 0.2);
+      -webkit-backdrop-filter: blur(4px);
+      backdrop-filter: blur(4px);
       z-index: 900;
     }
     .import-modal-sheet {
@@ -187,40 +219,37 @@ interface ImportDiffView {
       width: 100%;
       max-height: min(78vh, 560px);
       overflow-y: auto;
-      background: #1e1e2e;
-      border-top: 1px solid #45475a;
-      border-top-left-radius: 16px;
-      border-top-right-radius: 16px;
+      background: var(--mp-bg-elevated, #FFF);
+      border-top: 1px solid var(--mp-glass-border);
+      border-top-left-radius: var(--mp-radius-lg);
+      border-top-right-radius: var(--mp-radius-lg);
       padding: 0.65rem 1rem calc(1rem + env(safe-area-inset-bottom));
       z-index: 901;
-      box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.45);
-      animation: sheet-in 180ms ease-out;
+      box-shadow: var(--mp-glass-shadow-lg);
+      animation: sheet-in 220ms var(--mp-ease);
     }
     .sheet-handle {
       width: 42px;
       height: 4px;
       border-radius: 999px;
-      background: #6c7086;
+      background: var(--mp-text-muted);
+      opacity: 0.3;
       margin: 0 auto 0.75rem;
     }
     .import-modal-sheet h3 {
       margin: 0 0 0.35rem;
       font-size: 1rem;
+      font-weight: 700;
+      color: var(--mp-text-primary);
     }
     .import-modal-sheet p {
       margin: 0 0 0.75rem;
-      color: #a6adc8;
+      color: var(--mp-text-secondary);
       font-size: 0.85rem;
     }
     @keyframes sheet-in {
-      from {
-        transform: translateY(18px);
-        opacity: 0.7;
-      }
-      to {
-        transform: translateY(0);
-        opacity: 1;
-      }
+      from { transform: translateY(18px); opacity: 0.7; }
+      to   { transform: translateY(0); opacity: 1; }
     }
     .diff-grid {
       display: grid;
@@ -229,14 +258,9 @@ interface ImportDiffView {
       font-size: 0.85rem;
       margin-bottom: 0.9rem;
     }
-    .diff-grid div:nth-child(odd) {
-      color: #a6adc8;
-    }
-    .diff-grid div:nth-child(even) {
-      color: #cdd6f4;
-      font-weight: 600;
-      text-align: right;
-    }
+    .diff-grid div:nth-child(odd)  { color: var(--mp-text-secondary); }
+    .diff-grid div:nth-child(even) { color: var(--mp-text-primary); font-weight: 600; text-align: right; }
+
     .modal-actions {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -244,15 +268,17 @@ interface ImportDiffView {
     }
     .modal-actions button {
       border: none;
-      border-radius: 8px;
-      padding: 0.55rem 0.5rem;
+      border-radius: var(--mp-radius-sm);
+      padding: 0.6rem 0.5rem;
       cursor: pointer;
       font-weight: 600;
       font-size: 0.85rem;
+      transition: opacity var(--mp-transition-fast);
     }
-    .modal-actions .replace { background: #f38ba8; color: #11111b; }
-    .modal-actions .merge { background: #a6e3a1; color: #11111b; }
-    .modal-actions .cancel { background: #313244; color: #cdd6f4; }
+    .modal-actions button:active { opacity: 0.8; }
+    .modal-actions .replace { background: var(--mp-danger); color: var(--mp-text-inverse); }
+    .modal-actions .merge   { background: var(--mp-success); color: var(--mp-text-inverse); }
+    .modal-actions .cancel  { background: var(--mp-bg-base); color: var(--mp-text-secondary); border: 1px solid var(--mp-glass-border); }
   `],
 })
 export class InboxComponent {
