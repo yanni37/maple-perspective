@@ -33,6 +33,12 @@ jobs:
       - name: Build (for GitHub Pages)
         run: npm run build:gh
 
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-dist
+          path: dist/maple-perspective
+
   deploy:
     name: Deploy to GitHub Pages
     needs: test
@@ -40,6 +46,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-dist
+          path: .
 
       - name: Prepare publish directory and copy 404.html
         id: prepare
