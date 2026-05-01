@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ViewChild } from '@angular/core';
 import { StatusBarComponent } from '../status-bar/status-bar';
 import { InboxComponent } from '../../features/inbox/inbox';
 import { CanvasComponent } from '../../features/mind-map/canvas/canvas';
@@ -25,14 +25,15 @@ import { InboxUiService, ThemeService, StorageService } from '../../core/service
           <path fill="currentColor" d="M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z" />
         </svg>
         <span class="label">{{ ui.collapsed() ? 'Afficher Inbox' : 'Masquer Inbox' }}</span>
-        <span
+        <label
           class="action-btn action-left-2"
-          role="button"
-          tabindex="0"
           title="Importer JSON"
-          (click)="$event.stopPropagation(); fileInput.click()"
-          (keydown.enter)="$event.stopPropagation(); fileInput.click()"
-        ><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 14 1.45-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H18a2 2 0 0 1 2 2v2" /></svg></span>
+          for="fileInput"
+          tabindex="0"
+          (click)="$event.stopPropagation()"
+        >
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 14 1.45-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H18a2 2 0 0 1 2 2v2" /></svg>
+        </label>
         <span
           class="action-btn action-left-1"
           role="button"
@@ -62,9 +63,9 @@ import { InboxUiService, ThemeService, StorageService } from '../../core/service
         [class.collapsed]="ui.collapsed()"
         [attr.aria-hidden]="ui.collapsed()"
       >
-        <app-inbox />
+        <app-inbox #inboxComp />
       </aside>
-      <input #fileInput type="file" accept=".json" hidden (change)="importFile($event)" />
+      <input id="fileInput" #fileInput type="file" accept=".json" hidden (change)="importFile($event)" />
     </div>
   `,
   styles: [`
@@ -245,6 +246,7 @@ export class AppShellComponent {
   readonly ui: InboxUiService = inject(InboxUiService);
   readonly theme: ThemeService = inject(ThemeService);
   private storage: StorageService = inject(StorageService);
+  @ViewChild('inboxComp') private inboxComp?: InboxComponent;
 
   exportBackup(): void {
     this.storage.downloadBackup();
@@ -256,6 +258,13 @@ export class AppShellComponent {
     const reader = new FileReader();
     reader.onload = () => {
       const json = reader.result as string;
+      // Prefer to let the inbox component handle imports so the diff modal can appear.
+      if (this.inboxComp) {
+        this.inboxComp.handleImportedJSON(json);
+        return;
+      }
+
+      // Fallback: try inbox-only import, otherwise attempt a merge
       const count = this.storage.importInboxJSON(json);
       if (count === 0) {
         const ok = this.storage.mergeJSON(json);

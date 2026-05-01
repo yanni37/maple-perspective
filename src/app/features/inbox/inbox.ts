@@ -109,33 +109,37 @@ export class InboxComponent {
     const reader = new FileReader();
     reader.onload = () => {
       const json = reader.result as string;
-
-      // Try inbox format first (always additive)
-      const count = this.storage.importInboxJSON(json);
-      if (count === 0) {
-        const diff = this.storage.getMergeDiff(json);
-        if (!diff) {
-          window.alert('Fichier JSON invalide.');
-          return;
-        }
-
-        this.pendingImportJSON.set(json);
-        this.importDiff.set({
-          newNodes: diff.newNodes.length,
-          updatedNodes: diff.updatedNodes.length,
-          skippedNodes: diff.skippedNodes.length,
-          newEdges: diff.newEdges.length,
-          duplicateNodes: diff.duplicateNodes.length,
-          duplicateEdges: diff.duplicateEdges.length,
-          inboxAdded: diff.inboxAdded.length,
-          inboxSkipped: diff.inboxSkipped.length,
-        });
-        this.showImportModal.set(true);
-      }
+      this.handleImportedJSON(json);
     };
     reader.readAsText(file);
     // Reset input so same file can be re-imported
     (event.target as HTMLInputElement).value = '';
+  }
+
+  // Public helper so parent components can forward file contents
+  handleImportedJSON(json: string): void {
+    // Try inbox format first (always additive)
+    const count = this.storage.importInboxJSON(json);
+    if (count === 0) {
+      const diff = this.storage.getMergeDiff(json);
+      if (!diff) {
+        window.alert('Fichier JSON invalide.');
+        return;
+      }
+
+      this.pendingImportJSON.set(json);
+      this.importDiff.set({
+        newNodes: diff.newNodes.length,
+        updatedNodes: diff.updatedNodes.length,
+        skippedNodes: diff.skippedNodes.length,
+        newEdges: diff.newEdges.length,
+        duplicateNodes: diff.duplicateNodes.length,
+        duplicateEdges: diff.duplicateEdges.length,
+        inboxAdded: diff.inboxAdded.length,
+        inboxSkipped: diff.inboxSkipped.length,
+      });
+      this.showImportModal.set(true);
+    }
   }
 
   applyReplace(): void {
