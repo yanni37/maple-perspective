@@ -1,5 +1,4 @@
 import { Injectable, signal, computed } from '@angular/core';
-import { Injector } from '@angular/core';
 
 export interface Viewport {
   x: number;      // pan offset X (world coords)

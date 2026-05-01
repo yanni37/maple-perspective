@@ -141,13 +141,21 @@ import { EdgesComponent } from '../edges/edges';
       z-index: 300;
     }
     .edit-dialog input {
-      padding: 0.5rem 0.75rem;
-      border: 1px solid #45475a;
-      border-radius: 8px;
-      background: #1e1e2e;
-      color: #cdd6f4;
-      font-size: 1rem;
-      width: 200px;
+      padding: 0.45rem 0.6rem;
+      border: 1px solid rgba(124,127,155,0.12);
+      border-radius: 10px;
+      background: rgba(255,255,255,0.02);
+      color: #e6eef8;
+      font-size: 0.98rem;
+      width: 220px;
+      outline: none;
+      transition: box-shadow 120ms ease, border-color 120ms ease;
+    }
+    .edit-dialog input::placeholder { color: #97a0bf; }
+    .edit-dialog input:focus {
+      border-color: #89b4fa;
+      box-shadow: 0 10px 24px rgba(7,10,26,0.45), 0 0 0 6px rgba(137,180,250,0.04);
+      background: rgba(255,255,255,0.02);
     }
     .edit-dialog button {
       padding: 0.5rem 0.75rem;
@@ -185,10 +193,7 @@ export class CanvasComponent implements OnInit, OnDestroy {
     };
   });
 
-  readonly visibleNodes = computed(() => {
-    const nodes = this.state.nodes();
-    return nodes;
-  });
+  readonly visibleNodes = this.state.nodes;
 
   readonly connectedIds = computed<Set<string>>(() => {
     const id = this.selectedId();

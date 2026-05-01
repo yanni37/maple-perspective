@@ -56,8 +56,6 @@ export class StorageService {
       const inbox = this.read<InboxItem[]>(STORAGE_KEYS.inbox);
       const meta = this.read<Meta>(STORAGE_KEYS.meta);
 
-      console.log('[StorageService] Restoring:', { graph: !!graph, inbox: !!inbox, meta: !!meta });
-
       if (graph || inbox || meta) {
         this.state.loadState(
           graph ?? { nodes: [], edges: [] },
@@ -100,7 +98,6 @@ export class StorageService {
       this.write(STORAGE_KEYS.inbox, inbox);
       this.write(STORAGE_KEYS.meta, { ...this.state.meta(), dirty: false });
       this.state.markClean();
-      console.log('[StorageService] Saved:', graph.nodes.length, 'nodes');
     } catch (e) {
       console.error('[StorageService] Save failed:', e);
     }

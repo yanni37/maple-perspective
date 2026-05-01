@@ -1,5 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { StateService, StorageService } from '../../core/services';
+import { StateService, StorageService, InboxUiService } from '../../core/services';
 
 interface ImportDiffView {
   newNodes: number;
@@ -16,8 +16,9 @@ interface ImportDiffView {
   selector: 'app-inbox',
   standalone: true,
   template: `
-    <div class="inbox">
-      <div class="inbox-header">
+    <div class="inbox" [class.collapsed]="ui.collapsed()">
+      <div class="inbox-content">
+        <div class="inbox-header">
         <h2>📥 Inbox ({{ items().length }})</h2>
         <div class="inbox-actions">
           <label class="import-btn" title="Importer JSON (Siri)">
@@ -26,7 +27,7 @@ interface ImportDiffView {
           </label>
           <button class="export-btn" title="Exporter backup" (click)="exportBackup()">💾</button>
         </div>
-      </div>
+        </div>
       <div class="inbox-input">
         <input
           #input
@@ -50,6 +51,8 @@ interface ImportDiffView {
           <li class="empty">Aucune idée en attente</li>
         }
       </ul>
+
+      </div>
 
       @if (showImportModal()) {
         <div class="import-modal-overlay" (click)="cancelImport()"></div>
@@ -87,6 +90,18 @@ interface ImportDiffView {
       background: #1e1e2e;
       color: #cdd6f4;
     }
+    .inbox.collapsed { padding-top: 0.25rem; }
+
+    .inbox-content {
+      overflow: hidden;
+      transition: max-height 320ms cubic-bezier(.2,.9,.2,1), opacity 220ms ease;
+      max-height: 1200px;
+      opacity: 1;
+    }
+    .inbox.collapsed .inbox-content {
+      max-height: 0;
+      opacity: 0;
+    }
     .inbox-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
     .inbox-header h2 { font-size: 1rem; margin: 0; }
     .inbox-actions { display: flex; gap: 0.4rem; }
@@ -102,20 +117,35 @@ interface ImportDiffView {
     }
     .inbox-input input {
       flex: 1;
-      padding: 0.4rem 0.6rem;
-      border: 1px solid #313244;
-      border-radius: 6px;
-      background: #11111b;
-      color: #cdd6f4;
+      padding: 0.35rem 0.6rem;
+      border: 1px solid rgba(124,127,155,0.12);
+      border-radius: 10px;
+      background: rgba(255,255,255,0.02);
+      color: #e6eef8;
+      font-size: 0.95rem;
+      font-weight: 400;
+      outline: none;
+      transition: box-shadow 120ms ease, border-color 120ms ease, background 120ms ease;
+    }
+    .inbox-input input::placeholder { color: #97a0bf; }
+    .inbox-input input:focus {
+      border-color: #89b4fa;
+      box-shadow: 0 6px 18px rgba(7,10,26,0.5), 0 0 0 6px rgba(137,180,250,0.04);
+      background: rgba(255,255,255,0.02);
     }
     .inbox-input button {
-      padding: 0.4rem 0.75rem;
+      padding: 0.35rem 0.6rem;
       border: none;
-      border-radius: 6px;
-      background: #89b4fa;
-      color: #11111b;
-      font-weight: bold;
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(137,180,250,0.14), rgba(137,180,250,0.08));
+      color: #0b1020;
+      font-weight: 700;
       cursor: pointer;
+      min-width: 40px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(7,10,26,0.35);
     }
     .inbox-list {
       list-style: none;
@@ -228,6 +258,7 @@ interface ImportDiffView {
 export class InboxComponent {
   private state = inject(StateService);
   private storage = inject(StorageService);
+  readonly ui: InboxUiService = inject(InboxUiService);
 
   readonly items = computed(() => this.state.inbox());
   readonly showImportModal = signal(false);

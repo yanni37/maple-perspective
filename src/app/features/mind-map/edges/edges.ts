@@ -79,9 +79,7 @@ function cubicPath(x1: number, y1: number, x2: number, y2: number): string {
         />
       }
 
-      @if (draft(); as d) {
-        <path class="draft" [attr.d]="d.d" />
-      }
+
     </svg>
   `,
   styles: [`
@@ -93,7 +91,6 @@ function cubicPath(x1: number, y1: number, x2: number, y2: number): string {
       stroke-linecap: round;
     }
     .link { stroke-dasharray: 6 4; }
-    .draft { stroke: #f9e2af; stroke-dasharray: 4 4; opacity: 0.7; }
     path { transition: opacity 0.2s; }
     path.dimmed { opacity: 0.08; }
   `],
@@ -107,10 +104,6 @@ export class EdgesComponent {
     if (!this.focusedId) return false;
     return edge.sourceId !== this.focusedId && edge.targetId !== this.focusedId;
   }
-
-  // Exposed so canvas can set the draft edge during link-drag
-  readonly draft = computed(() => this._draft());
-  _draft = computed<EdgeLine | null>(() => null); // overridden at runtime via signal
 
   readonly edgeLines = computed<EdgeLine[]>(() => {
     const nodes = this.state.nodes();

@@ -10,7 +10,6 @@ const DRAG_THRESHOLD = 5;
   host: {
     '(pointerdown)': 'onPointerDown($event)',
     '(touchstart)': 'onPointerDown($event)',
-    '(mousedown)': 'onPointerDown($event)',
     '(contextmenu)': 'onContextMenu($event)',
     '[style.position]': '"absolute"',
   },
@@ -78,8 +77,8 @@ export class NodeComponent {
   private upListener = (e: MouseEvent | TouchEvent) => this.onPointerUp(e);
 
   onContextMenu(event: MouseEvent): void {
-    try { event.preventDefault(); } catch {}
-    try { event.stopPropagation(); } catch {}
+    event.preventDefault();
+    event.stopPropagation();
     const x = event.clientX;
     const y = event.clientY;
     this.zone.run(() => {
@@ -92,13 +91,6 @@ export class NodeComponent {
   onPointerDown(event: MouseEvent | TouchEvent): void {
     event.preventDefault();
     event.stopPropagation();
-    // If this is a PointerEvent, also stop its propagation (pointer events can reach canvas)
-    try {
-      const pe = event as unknown as PointerEvent;
-      if (pe && typeof pe.pointerId === 'number') {
-        pe.stopPropagation();
-      }
-    } catch (e) {}
     const pos = this.getClientPos(event);
     this.startX = pos.x;
     this.startY = pos.y;
