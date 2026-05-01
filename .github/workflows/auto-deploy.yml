@@ -51,33 +51,15 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-dist
-          path: .
+          path: ./publish
 
-      - name: Prepare publish directory and copy 404.html
-        id: prepare
-        run: |
-          set -e
-          # Prefer top-level dist folder, fall back to browser/ if present
-          if [ -f "dist/maple-perspective/index.html" ]; then
-            PUBLISH_DIR="dist/maple-perspective"
-            echo "Found index in $PUBLISH_DIR"
-            cp "dist/maple-perspective/index.html" "dist/maple-perspective/404.html"
-          elif [ -f "dist/maple-perspective/browser/index.html" ]; then
-            PUBLISH_DIR="dist/maple-perspective/browser"
-            echo "Found index in $PUBLISH_DIR"
-            cp "dist/maple-perspective/browser/index.html" "dist/maple-perspective/browser/404.html"
-          else
-            echo "Build output not found. Listing dist:" >&2
-            ls -al dist || true
-            ls -al dist/maple-perspective || true
-            exit 1
-          fi
-          echo "publish_dir=$PUBLISH_DIR" >> "$GITHUB_OUTPUT"
+      - name: Copy 404.html for SPA routing
+        run: cp ./publish/index.html ./publish/404.html
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ${{ steps.prepare.outputs.publish_dir }}
+          publish_dir: ./publish
           publish_branch: gh-pages
           keep_files: false
