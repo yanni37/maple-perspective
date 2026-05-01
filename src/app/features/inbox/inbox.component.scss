@@ -1,0 +1,129 @@
+.inbox {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: var(--mp-space-md);
+  color: var(--mp-text-primary);
+}
+.inbox.collapsed { padding-top: var(--mp-space-xs); }
+
+.inbox-content {
+  overflow: hidden;
+  transition: max-height 320ms var(--mp-ease), opacity 220ms var(--mp-ease);
+  max-height: 1200px;
+  opacity: 1;
+}
+.inbox.collapsed .inbox-content {
+  max-height: 0;
+  opacity: 0;
+}
+
+.inbox-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--mp-space-sm);
+}
+.inbox-header h2 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--mp-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.icon { width: 1em; height: 1em; flex-shrink: 0; }
+.icon-header { width: 1.1rem; height: 1.1rem; }
+.inbox-actions { display: flex; gap: 0.35rem; }
+.import-btn, .export-btn {
+  background: transparent;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: var(--mp-radius-xs);
+  transition: background var(--mp-transition-fast);
+}
+.import-btn:hover, .export-btn:hover { background: var(--mp-bg-hover); }
+
+.inbox-input { display: flex; gap: var(--mp-space-sm); }
+.inbox-input input {
+  flex: 1;
+  padding: 0.45rem 0.75rem;
+  border: 1.5px solid var(--mp-glass-border);
+  border-radius: var(--mp-radius-sm);
+  background: var(--mp-bg-base, #F6F5F1);
+  color: var(--mp-text-primary);
+  font-size: 0.9rem;
+  font-weight: 400;
+  outline: none;
+  transition: box-shadow var(--mp-transition-fast), border-color var(--mp-transition-fast);
+}
+.inbox-input input::placeholder { color: var(--mp-text-muted); }
+.inbox-input input:focus {
+  border-color: var(--mp-accent);
+  box-shadow: 0 0 0 3px var(--mp-accent-glow);
+}
+.inbox-input button {
+  padding: 0.45rem;
+  border: none;
+  border-radius: var(--mp-radius-sm);
+  background: transparent;
+  color: var(--mp-text-secondary);
+  font-size: 1rem;
+  cursor: pointer;
+  min-width: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--mp-transition-fast), opacity var(--mp-transition-fast);
+}
+.inbox-input button:hover { color: var(--mp-accent); }
+.inbox-input button:active { opacity: 0.7; }
+
+.inbox-list {
+  list-style: none;
+  margin: var(--mp-space-md) 0 0;
+  padding: 0;
+  overflow-y: auto;
+  flex: 1;
+}
+.inbox-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.25rem;
+  border-bottom: 1px solid var(--mp-glass-border);
+  transition: background var(--mp-transition-fast);
+}
+.inbox-item:hover { background: var(--mp-bg-hover); border-radius: var(--mp-radius-xs); }
+
+.item-content {
+  flex: 1;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--mp-text-primary);
+}
+.item-actions { display: flex; gap: 0.3rem; }
+.item-actions button {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.95rem;
+  padding: 0.2rem;
+  border-radius: var(--mp-radius-xs);
+  transition: background var(--mp-transition-fast);
+}
+.item-actions button:hover { background: var(--mp-bg-hover); }
+.promote { color: var(--mp-success, #34A853); }
+.delete  { color: var(--mp-danger, #EA4335); }
+
+.empty {
+  color: var(--mp-text-muted);
+  padding: 1.25rem 0;
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+/* Modal overlay/sheet moved to global styles to reduce component CSS size */

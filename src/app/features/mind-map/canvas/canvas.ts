@@ -457,7 +457,7 @@ export class CanvasComponent implements OnInit, OnDestroy {
       this.applyClamp();
       // apply friction (adjusted for smoother, iOS-like glide)
       // per-frame multiplier: closer to 1 => longer glide
-      const FRICTION = 0.985; // tuned for softer deceleration
+      const FRICTION = 0.965; // tuned for quicker deceleration
       this.inertiaVx *= FRICTION;
       this.inertiaVy *= FRICTION;
       const speed = Math.hypot(this.inertiaVx, this.inertiaVy);
@@ -485,7 +485,7 @@ export class CanvasComponent implements OnInit, OnDestroy {
   private onWheel = (e: WheelEvent): void => {
     e.preventDefault();
     const vp = this.viewportSvc.viewport();
-    const delta = -e.deltaY * 0.001;
+    const delta = -e.deltaY * 0.0005;
     const newScale = vp.scale * (1 + delta);
     this.scheduleUpdate(() => {
       this.viewportSvc.zoom(newScale, e.clientX, e.clientY);
@@ -574,7 +574,7 @@ export class CanvasComponent implements OnInit, OnDestroy {
       this.viewportSvc.zoom(newScale, mid.x, mid.y);
       this.applyClamp();
       // friction
-      const F = 0.92;
+      const F = 0.88;
       this.pinchInertiaV *= F;
       if (Math.abs(this.pinchInertiaV) < 0.0002) {
         this.stopPinchInertia();

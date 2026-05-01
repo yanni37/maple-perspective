@@ -27,3 +27,82 @@ app-root {
   width: 100%;
   height: 100%;
 }
+
+/* Shared modal / import sheet styles moved here from the inbox component to
+   avoid per-component stylesheet budget overflows. */
+.import-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.2);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  z-index: 900;
+}
+.import-modal-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-height: min(78vh, 560px);
+  overflow-y: auto;
+  background: var(--mp-bg-elevated, #FFF);
+  border-top: 1px solid var(--mp-glass-border);
+  border-top-left-radius: var(--mp-radius-lg);
+  border-top-right-radius: var(--mp-radius-lg);
+  padding: 0.65rem 1rem calc(1rem + env(safe-area-inset-bottom));
+  z-index: 901;
+  box-shadow: var(--mp-glass-shadow-lg);
+  animation: sheet-in 220ms var(--mp-ease);
+}
+.sheet-handle {
+  width: 42px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--mp-text-muted);
+  opacity: 0.3;
+  margin: 0 auto 0.75rem;
+}
+.import-modal-sheet h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--mp-text-primary);
+}
+.import-modal-sheet p {
+  margin: 0 0 0.75rem;
+  color: var(--mp-text-secondary);
+  font-size: 0.85rem;
+}
+@keyframes sheet-in {
+  from { transform: translateY(18px); opacity: 0.7; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+.diff-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+  margin-bottom: 0.9rem;
+}
+.diff-grid div:nth-child(odd)  { color: var(--mp-text-secondary); }
+.diff-grid div:nth-child(even) { color: var(--mp-text-primary); font-weight: 600; text-align: right; }
+
+.modal-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+.modal-actions button {
+  border: none;
+  border-radius: var(--mp-radius-sm);
+  padding: 0.6rem 0.5rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: opacity var(--mp-transition-fast);
+}
+.modal-actions button:active { opacity: 0.8; }
+.modal-actions .replace { background: var(--mp-danger); color: var(--mp-text-inverse); }
+.modal-actions .merge   { background: var(--mp-success); color: var(--mp-text-inverse); }
+.modal-actions .cancel  { background: var(--mp-bg-base); color: var(--mp-text-secondary); border: 1px solid var(--mp-glass-border); }
