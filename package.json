@@ -8,6 +8,7 @@
     "build:gh": "ng build --base-href /maple-perspective/",
     "deploy": "ng build --base-href /maple-perspective/ && node -e \"require('fs').copyFileSync('dist/maple-perspective/browser/index.html','dist/maple-perspective/browser/404.html')\" && npx angular-cli-ghpages --dir=dist/maple-perspective/browser",
     "watch": "ng build --watch --configuration development",
+    "gen-icons": "node scripts/gen-icons.js",
     "test": "ng test"
   },
   "private": true,
